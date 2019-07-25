@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+#kind: StatefulSet
+metadata: 
+  name: memcache
+  labels:
+   app: memcache
+spec:
+#  serviceName: memcache
+  replicas: 1
+  selector:
+    matchLabels:
+      app: memcache
+  template: 
+    metadata:
+      labels:
+        app: memcache
+    spec:
+      #restartPolicy: Always
+      containers:
+      - name: memcache
+        image: memcached:latest
+        ports:
+        - containerPort: 11211
+        livenessProbe:
+          tcpSocket:
+            port: 11211
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 5  
+        readinessProbe:
+          tcpSocket:
+            port: 11211
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: memcache
+  name: memcache
+spec:
+  clusterIP: None
+  ports:
+  - protocol: TCP 
+    port: 11211
+    targetPort: 11211
+  selector:
+    app: memcache

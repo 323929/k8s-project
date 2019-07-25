@@ -1,0 +1,39 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: traefik-ingress-ota
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    #traefik.ingress.kubernetes.io/affinity: "true"
+    #traefik.ingress.kubernetes.io/load-balancer-method: drr
+    #traefik.ingress.kubernetes.io/preserve-host: "true"
+    #traefik.ingress.kubernetes.io/session-cookie-name: route
+spec:
+  rules:
+  - host: traefik.nick.com
+    http:
+      paths:
+      - path: /user-service-api
+        backend:
+          serviceName: user-manage-api
+          servicePort: 8080
+      - path: /device-service-api
+        backend:
+          serviceName: device-manage-api
+          servicePort: 8080
+      - path: /datarepoapi
+        backend:
+          serviceName: ota-data-repo
+          servicePort: 8080
+      - path: /storageservice
+        backend:
+          serviceName: storage-service-api
+          servicePort: 8080
+      - path: /otaapi
+        backend:
+          serviceName: ota-api
+          servicePort: 8080
+      - path: /ota-admin-web
+        backend:
+          serviceName: ota-admin-web
+          servicePort: 8080

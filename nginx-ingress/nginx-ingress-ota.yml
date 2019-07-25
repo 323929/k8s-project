@@ -1,0 +1,40 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: nginx-ingress-ota
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/session-cookie-path: / 
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "ota-cookie"
+    nginx.ingress.kubernetes.io/session-cookie-hash: "sha1"
+spec:
+  rules:
+  - host: k8stest.nick.com
+    http:
+      paths:
+      - path: /user-service-api/.*
+        backend:
+          serviceName: user-manage-api
+          servicePort: 8080
+      - path: /device-service-api/.*
+        backend:
+          serviceName: device-manage-api
+          servicePort: 8080
+      - path: /datarepoapi/.*
+        backend:
+          serviceName: ota-data-repo
+          servicePort: 8080
+      - path: /storageservice/.*
+        backend:
+          serviceName: storage-service-api
+          servicePort: 8080
+      - path: /otaapi/.*
+        backend:
+          serviceName: ota-api
+          servicePort: 8080
+      - path: /ota-admin-web/.*
+        backend:
+          serviceName: ota-admin-web
+          servicePort: 8080

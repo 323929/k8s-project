@@ -1,0 +1,84 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: storage-service-api
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-client-provisioner
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: storage-service-api 
+  labels:
+   app: storage-service-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: storage-service-api
+  template: 
+    metadata:
+      labels:
+        app: storage-service-api
+    spec:
+      #restartPolicy: Always
+      containers:
+      - name: storage-service-api
+        image: 343878942045.dkr.ecr.us-east-2.amazonaws.com/storage-service-api/leepi-ota/dev:latest
+        imagePullPolicy: IfNotPresent
+#        resources:
+#          limits:
+#            memory: "1024Mi"
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DIR_ROOT
+          value: "/opt/data"
+        - name : OTA_DEV_TOKEN_API
+          value : http://device-manage-api:8080/device-service-api
+        - name : OTA_USR_TOKEN_API
+          value : http://user-manage-api:8080/user-service-api
+        - name : UPLOAD_DOMAIN
+          value : http://k8stest.nick.com
+        - name : DOWNLOAD_DOMAIN
+          value : http://k8stest.nick.com
+        - name : LOGGING_PATH
+          value : /var/log/storage-service-api
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 90
+          periodSeconds: 90
+          timeoutSeconds: 90
+        volumeMounts:
+            - name: storage-service-api-log
+              mountPath: "/var/log/storage-service-api"
+      volumes:
+        - name: storage-service-api-log
+          persistentVolumeClaim:
+            claimName: storage-service-api
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: storage-service-api
+  name: storage-service-api
+  #annotations:
+  # traefik.ingress.kubernetes.io/load-balancer-method: drr
+  # traefik.ingress.kubernetes.io/affinity: "true"
+spec:
+  #type: NodePort
+  ports:
+  - protocol: TCP 
+    port: 8080
+    targetPort: 8080
+    #nodePort: 30004
+  selector:
+    app: storage-service-api

@@ -1,0 +1,82 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ota-admin-web
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-client-provisioner
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: ota-admin-web 
+  labels:
+   app: ota-admin-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ota-admin-web
+  template: 
+    metadata:
+      labels:
+        app: ota-admin-web
+    spec:
+      #restartPolicy: Always
+      containers:
+      - name: ota-admin-web
+        image: 343878942045.dkr.ecr.us-east-2.amazonaws.com/ota-admin-web/leepi-ota/dev:latest
+        imagePullPolicy: IfNotPresent
+#        resources:
+#          limits:
+#            memory: "1024Mi"
+        ports:
+        - containerPort: 8080
+        env:
+        - name : ADM_WEB_API
+          value : http://ota-api:8080/otaapi/
+        - name : ADM_USER_SERVICE_API
+          value : http://user-manage-api:8080/user-service-api/
+        - name : ADM_DEVICE_SERVICE_API
+          value : http://device-manage-api:8080/device-service-api/
+        - name : ADM_STORAGE_SERVICE_API
+          value : http://storage-service-api:8080/storageservice/
+        - name : LOGGING_PATH
+          value : /var/log/ota-admin-web
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 90
+          timeoutSeconds: 90
+          periodSeconds: 90
+        volumeMounts:
+            - name: ota-admin-web-log
+              mountPath: "/var/log/ota-admin-web" 
+      volumes:
+        - name: ota-admin-web-log
+          persistentVolumeClaim:
+            claimName: ota-admin-web
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: ota-admin-web
+  name: ota-admin-web
+  #annotations:
+  #traefik.ingress.kubernetes.io/load-balancer-method: drr
+  # traefik.ingress.kubernetes.io/affinity: "true"
+spec:
+        #type: NodePort
+  ports:
+  - protocol: TCP 
+    port: 8080
+    targetPort: 8080
+    #nodePort: 30006
+  selector:
+    app: ota-admin-web

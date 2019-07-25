@@ -1,0 +1,89 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: user-manage-api
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-client-provisioner
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: user-manage-api
+  labels:
+   app: user-manage-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: user-manage-api
+  template: 
+    metadata:
+      labels:
+        app: user-manage-api
+    spec:
+      #restartPolicy: Always
+      containers:
+      - name: user-manage-api
+        image: 343878942045.dkr.ecr.us-east-2.amazonaws.com/user-manage-api/leepi-ota/dev:latest
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "2Gi"
+          requests:
+            memory: "2Gi"
+        ports:
+        - containerPort: 8080
+        env:
+        - name : DB_NAME 
+          value : userdb
+        - name : DB_PASSWORD 
+          value : 1qaz2wsx
+        - name : DB_POOL_SIZE
+          value : "5"
+        - name : DB_PORT
+          value : "5432"
+        - name : DB_SERVER
+          value : 192.168.12.216
+        - name : DB_USERNAME
+          value : postgres
+        - name : LOGGING_PATH
+          value : /var/log/user-manager
+        - name : SESSION_TOKEN_TTL
+          value : "1800"
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 90
+          periodSeconds: 90
+          timeoutSeconds: 90
+        volumeMounts:
+            - name: user-manager-log
+              mountPath: "/var/log/user-manager" 
+      volumes:
+        - name: user-manager-log
+          persistentVolumeClaim:
+            claimName: user-manage-api  
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: user-manage-api
+  name: user-manage-api
+  #annotations:
+  # traefik.ingress.kubernetes.io/load-balancer-method: drr
+  # traefik.ingress.kubernetes.io/affinity: "true"
+spec:
+  #type: NodePort
+  ports:
+  - protocol: TCP 
+    port: 8080
+    targetPort: 8080
+    #nodePort: 30001
+  selector:
+    app: user-manage-api

@@ -1,0 +1,88 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ota-data-repo
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-client-provisioner
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: ota-data-repo 
+  labels:
+   app: ota-data-repo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ota-data-repo
+  template: 
+    metadata:
+      labels:
+        app: ota-data-repo
+    spec:
+      #restartPolicy: Always
+      containers:
+      - name: ota-data-repo
+        image: 343878942045.dkr.ecr.us-east-2.amazonaws.com/ota-data-repo/leepi-ota/dev:latest
+        imagePullPolicy: IfNotPresent
+#        resources:
+#          limits:
+#            memory: "1024Mi"
+        ports:
+        - containerPort: 8080
+        env:
+        - name : DR_NOSQL_IMPL
+          value : PostgreSQL
+        - name : DR_DB_NAME 
+          value : otadb
+        - name : DR_DB_PASSWORD 
+          value : 1qaz2wsx
+        - name : DB_POOL_SIZE
+          value : "5"
+        - name : DR_DB_SERVER
+          value : 192.168.12.216:5432
+        - name : DR_DB_USERNAME
+          value : postgres
+        - name : OTA_DEV_TOKEN_API
+          value : http://device-manage-api:8080/device-service-api
+        - name : LOGGING_PATH
+          value : /var/log/ota-data-repo
+        livenessProbe:
+          httpGet:
+            path: /               
+            port: 8080
+          initialDelaySeconds: 90
+          periodSeconds: 90
+          timeoutSeconds: 90
+        volumeMounts:
+            - name: ota-data-repo-log
+              mountPath: "/var/log/ota-data-repo" 
+      volumes:
+        - name: ota-data-repo-log
+          persistentVolumeClaim:
+            claimName: ota-data-repo
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: ota-data-repo
+  name: ota-data-repo
+  #annotations:
+  #  traefik.ingress.kubernetes.io/load-balancer-method: drr
+  # traefik.ingress.kubernetes.io/affinity: "true"
+spec:
+  #type: NodePort
+  ports:
+  - protocol: TCP 
+    port: 8080
+    targetPort: 8080
+    #nodePort: 30003
+  selector:
+    app: ota-data-repo

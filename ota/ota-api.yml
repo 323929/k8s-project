@@ -1,0 +1,106 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ota-api
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-client-provisioner
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: ota-api 
+  labels:
+   app: ota-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ota-api
+  template: 
+    metadata:
+      labels:
+        app: ota-api
+    spec:
+      #restartPolicy: Always
+      containers:
+      - name: ota-api
+        image: 343878942045.dkr.ecr.us-east-2.amazonaws.com/ota-api/leepi-ota/dev:latest
+        imagePullPolicy: IfNotPresent
+#        resources:
+#          limits:
+#            memory: "1024Mi"
+        ports:
+        - containerPort: 8080
+        env:
+        - name : OTA_DB_SERVER
+          value : 192.168.12.216:5432
+        - name : OTA_DB_NAME
+          value : otadb
+        - name : OTA_DB_USERNAME
+          value : postgres
+        - name : OTA_DB_PASSWORD
+          value : 1qaz2wsx
+        - name : OTA_DB_POOL_SIZE
+          value : "5"
+        - name : OTA_NOSQL_IMPL
+          value : PostgreSQL
+        - name : OTA_IF_URL_DR
+          value : http://k8stest.nick.com/datarepoapi/
+        - name : OTA_IF_URL_OTA
+          value : http://k8stest.nick.iauto.com/otaapi/
+        - name : OTA_DEV_TOKEN_API
+          value : http://device-manage-api:8080/device-service-api/
+        - name : OTA_USR_TOKEN_API
+          value : http://user-manage-api:8080/user-service-api/
+        - name : OTA_STORAGE_API
+          value : http://storage-service-api:8080/storageservice/
+        - name : HTTP_REQ_LOG_LEVEL
+          value : DEBUG
+        - name : LOG_APPENDER
+          value : FILE
+        - name : MEMCACHED_CACHE_SERVER
+          value : memcache:11211
+        - name : LOGGING_PATH
+          value : /var/log/ota-api
+        - name : CACHE_LOG_LEVEL
+          value : DEBUG
+        - name : HTTP_REQ_LOG_LEVEL
+          value : DEBUG
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 90
+          periodSeconds: 90
+          timeoutSeconds: 90
+        volumeMounts:
+            - name: ota-api-log
+              mountPath: "/var/log/ota-api" 
+      volumes:
+        - name: ota-api-log
+          persistentVolumeClaim:
+            claimName: ota-api
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: ota-api
+  name: ota-api
+  #annotations:
+  # traefik.ingress.kubernetes.io/load-balancer-method: drr
+  # traefik.ingress.kubernetes.io/affinity: "true"
+spec:
+  #type: NodePort
+  ports:
+  - protocol: TCP 
+    port: 8080
+    targetPort: 8080
+    #nodePort: 30005
+  selector:
+    app: ota-api
