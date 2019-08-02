@@ -2,7 +2,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: nfs-client-provisioner
-provisioner: ota.iauto.com/nfs # or choose another name, must match deployment's env PROVISIONER_NAME'
+provisioner: ota.nick.com/nfs # or choose another name, must match deployment's env PROVISIONER_NAME'
 parameters:
   archiveOnDelete: "false"
 reclaimPolicy: Retain
