@@ -29,7 +29,7 @@ spec:
       #restartPolicy: Always
       containers:
       - name: storage-service-api
-        image: 343878942045.dkr.ecr.us-east-2.amazonaws.com/storage-service-api/leepi-ota/dev:latest
+        image: storage-service-api:latest
         imagePullPolicy: IfNotPresent
 #        resources:
 #          limits:
