@@ -29,7 +29,7 @@ spec:
       #restartPolicy: Always
       containers:
       - name: ota-admin-web
-        image: 343878942045.dkr.ecr.us-east-2.amazonaws.com/ota-admin-web/leepi-ota/dev:latest
+        image: ota-admin-web:latest
         imagePullPolicy: IfNotPresent
 #        resources:
 #          limits:
