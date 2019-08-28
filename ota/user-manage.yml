@@ -29,7 +29,7 @@ spec:
       #restartPolicy: Always
       containers:
       - name: user-manage-api
-        image: 343878942045.dkr.ecr.us-east-2.amazonaws.com/user-manage-api/leepi-ota/dev:latest
+        image: user-manage-api:latest
         imagePullPolicy: IfNotPresent
         resources:
           limits:
